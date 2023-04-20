@@ -1,0 +1,49 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Actualizamos Paquetes
+      apt: update_cache=yes upgrade=yes
+    
+    - name: Instalamos paquetes necesarios.
+      apt:
+        pkg:
+          - unzip
+          - openssh-server
+          - git
+    
+    - name: Crear usuario davidrg
+      user:
+        name: davidrg
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        password: $6$I4ebzC6tyqwbbyNE$kTa2k6HThzG1mS8RpJyWpD16kvTxveOOPrjk2DNVMdE.6rtqxb/2n9Hi/Up0Jj49zmzax81hffkRuMqp340sd.
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+    
+    - name: Descargar y descomprimir wordpress.zip
+      ansible.builtin.unarchive:
+        src: https://wordpress.org/latest.zip
+        dest: /home/davidrg
+        remote_src: yes
+    
+    - name: Instalar MariaDB
+      apt:
+        pkg: 
+          - mariadb-server
+          - python3-mysqldb
+    - name: Crear la base de datos
+      mysql_db: name={{bd_name}} state=present
+
+    - name: Configurar usuario de la base de datos
+      mysql_user: name={{bd_user}} host={{ item }} password={{bd_pass}} priv={{bd_name}}.*:ALL,GRANT
+      with_items:
+        - localhost
+    
+    - name: Clonar repositorio GIT
+      git:
+        repo: https://github.com/josedom24/ansible_ejemplos.git
+        dest: /home/davidrg/ansible_ejemplos
+
+
